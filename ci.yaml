@@ -1,0 +1,11 @@
+on:
+  push:
+
+name: CI
+jobs:
+  nocommit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - name: "nocommit checker"
+        uses: nobssoftware/nocommit@5c3cf9519fe40b80b0954d254085b67b532a5dc3
