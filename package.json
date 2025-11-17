@@ -1,0 +1,37 @@
+{
+  "name": "@anterior/watchdawg",
+  "version": "0.0.0",
+  "description": "workflow agent watchdog to guarantee delivery",
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.913.0",
+    "bencode": "^4.0.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/bencode": "^2.0.4",
+    "@types/node": "^24.8.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "pino-pretty": "^13.1.2",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.46.4"
+  }
+}
