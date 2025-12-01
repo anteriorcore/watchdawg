@@ -16,6 +16,7 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": true,
     "useUnknownInCatchVariables": true,
+    "strictNullChecks": true,
 
     /* Module Resolution */
     "module": "nodenext",
@@ -31,7 +32,7 @@
     "outDir": "dist",
     "incremental": true
   },
-  "include": ["src/**/*.ts", "test"],
+  "include": ["src/**/*.ts"],
   "declarationDir": "dist",
   "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
 }
