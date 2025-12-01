@@ -19,7 +19,7 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.931.0",
+    "@aws-sdk/client-sqs": "^3.936.0",
     "bencode": "^4.0.0",
     "zod": "^4.1.12"
   },
