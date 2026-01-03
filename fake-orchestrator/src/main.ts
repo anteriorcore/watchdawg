@@ -21,7 +21,7 @@ const main = () => {
       return c.json({ status: jobs.get(id) });
     }
     jobs.set(id, 1);
-    return c.json({ status: 1 });
+    return c.json({ status: 1, id });
   });
   app.post("/:id", (c) => {
     const id = c.req.param("id");
@@ -30,12 +30,12 @@ const main = () => {
       return c.json({ status: -1 });
     }
     jobs.set(id, 2);
-    return c.json({ status: 2 });
+    return c.json({ status: 2, id });
   });
   app.get("/:id", (c) => {
     const id = c.req.param("id");
     const job = jobs.get(id);
-    return c.json({ status: job ?? 0 });
+    return c.json({ status: job ?? 0, id });
   });
   serve({
     fetch: app.fetch,
