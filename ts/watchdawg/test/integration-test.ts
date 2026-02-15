@@ -1,3 +1,5 @@
+#!/usr/bin/env node --enable-source-maps
+
 import assert from "node:assert/strict";
 import { setTimeout } from "timers/promises";
 import { test } from "node:test";
@@ -79,4 +81,5 @@ const _ = test("test happy path", { timeout: 120e3 }, async () => {
   // TODO: ensure job and watchdog queue are empty
 
   assert(true);
+  console.log("DONE TEST!");
 });

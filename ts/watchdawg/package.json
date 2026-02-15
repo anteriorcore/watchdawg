@@ -12,10 +12,15 @@
       "require": "./dist/*.js"
     }
   },
+  "bin": {
+    "demo-main": "./test/demo-main.ts",
+    "integration-test": "./test/integration-test.ts"
+  },
   "scripts": {
     "build": "tsc",
     "demo": "node ./test/demo-main.ts",
-    "integration": "node ./test/integration-test.ts"
+    "integration": "node ./test/integration-test.ts",
+    "test": "tsc"
   },
   "engines": {
     "node": ">=24"

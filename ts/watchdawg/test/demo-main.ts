@@ -1,3 +1,5 @@
+#!/usr/bin/env node --enable-source-maps
+
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { amain } from "../src/app.ts";
 import type { Logger, Orchestrator } from "../src/models.ts";
