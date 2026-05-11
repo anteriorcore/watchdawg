@@ -13,7 +13,9 @@
     }
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "demo": "node ./test/demo-main.ts",
+    "integration": "node ./test/integration-test.ts"
   },
   "engines": {
     "node": ">=24"
