@@ -1,3 +1,5 @@
+#!/usr/bin/env node --enable-source-maps
+
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 
@@ -39,7 +41,7 @@ const main = () => {
   });
   serve({
     fetch: app.fetch,
-    port: 9991,
+    port: 9991, // TODO: take port arg
   });
 };
 

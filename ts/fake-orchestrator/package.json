@@ -15,7 +15,11 @@
   "scripts": {
     "build": "tsc",
     "start": "node src/main.ts",
-    "dev": "node --watch-path=./src src/main.ts"
+    "dev": "node --watch-path=./src src/main.ts",
+    "test": "tsc"
+  },
+  "bin": {
+    "orchestrator": "./src/main.ts"
   },
   "engines": {
     "node": ">=24"

@@ -1,4 +1,0 @@
-[formatter.prettier]
-command = "prettier"
-options = ["--write", "--ignore-unknown"]
-includes = ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.json", "**/*.css", "**/*.html", "**/*.md"]
