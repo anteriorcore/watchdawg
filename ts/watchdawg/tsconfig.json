@@ -8,7 +8,6 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
-
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -16,22 +15,21 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": true,
     "useUnknownInCatchVariables": true,
-
     /* Module Resolution */
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "lib": ["esnext"],
-
     /* Build */
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
+    "rootDir": "src",
     "incremental": true
   },
-  "include": ["src/**/*.ts", "test"],
+  "include": ["src/**/*.ts"],
   "declarationDir": "dist",
   "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
 }
