@@ -1,14 +1,9 @@
 .venv
 .envrc
-.terraform*
 data
-__pycache__
 result
 .direnv
-.idea
 node_modules
 dist
 tsconfig.tsbuildinfo
-
-# Noise from dynamodb-local program in the working directory
-dynamodb-local-metadata.json
+.npmrc
