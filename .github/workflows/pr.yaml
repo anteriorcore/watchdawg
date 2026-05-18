@@ -13,7 +13,21 @@ jobs:
     name: "PR title"
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          key: "nix-eval-cache-${{ runner.os }}-${{ runner.arch }}"
+          path: "~/.cache/nix"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
       - run: |
-          <<<"$TITLE" grep '^\(build\|chore\|ci\|docs\|feat\|fix\|perf\|p\?refactor\|revert\|style\|test\)\(([a-zA-Z0-9_-]\+)\)\?!\?: '
+          <<<"$TITLE" nix run .#conventional-commit
         env:
           TITLE: "${{ github.event.pull_request.title || github.event.merge_group.head_commit.message }}"
+
+  merging-into-master:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - run: |
+          [[ "$GITHUB_BASE_REF" == master ]]
