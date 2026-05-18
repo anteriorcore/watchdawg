@@ -5,7 +5,8 @@ import {
 } from "./models.ts";
 
 import { type JobMsg, type JobMsgRaw, type Orchestrator } from "./models.ts";
-import { JobSQS, SQSBouncer } from "./queues.ts";
+import { filter, takeWhile } from "./pipeline.ts";
+import { JobSQS, WatchdogQueue } from "./queues.ts";
 
 export { amain, type JobMsgRaw };
 
@@ -13,7 +14,7 @@ export { amain, type JobMsgRaw };
 async function amain(
   o: Orchestrator,
   jobsQueue: JobSQS,
-  watchdogQueue: SQSBouncer,
+  watchdogQueue: WatchdogQueue,
   maxWatchdogAgeSecs: number, // default max age if not passed explicitly with a job
   logger: Logger,
 ) {
@@ -39,7 +40,7 @@ async function amain(
 async function watchdogLoopForever(
   o: Orchestrator,
   jobsQueue: JobSQS,
-  watchdogQueue: SQSBouncer,
+  watchdogQueue: WatchdogQueue,
   logger: Logger,
 ): Promise<never> {
   for (;;) {
@@ -53,7 +54,7 @@ async function watchdogLoopForever(
 async function handle1JobForever(
   o: Orchestrator,
   jobsQueue: JobSQS,
-  watchdogQueue: SQSBouncer,
+  watchdogQueue: WatchdogQueue,
   maxWatchdogAgeSecs: number,
   logger: Logger,
 ): Promise<never> {
@@ -98,13 +99,20 @@ async function handle1JobForever(
 async function watchdogLoop(
   o: Orchestrator,
   jobsQueue: JobSQS,
-  watchdogQueue: SQSBouncer,
+  watchdogQueue: WatchdogQueue,
   logger: Logger,
   forever: boolean,
 ): Promise<void> {
-  const msgs = forever ? watchdogQueue.readAll() : watchdogQueue.drain();
+  const source = watchdogQueue.receive(forever);
+  const msgs = forever
+    ? filter(source, (msg) => msg !== null)
+    : takeWhile(source, (msg) => msg !== null);
   for await (const watchdogMsg of msgs) {
     const l = logger.child({ watchdogMsg });
+
+    // for both drain and read loop
+    if (await watchdogQueue.deleteIfStale(watchdogMsg)) continue;
+
     l.info(
       `watchdog queue has received a message jobReceipt= ${watchdogMsg.job_receipt} . Reading status from Orchestrator.`,
     );

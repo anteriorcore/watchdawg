@@ -3,7 +3,7 @@
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { amain } from "../src/app.ts";
 import type { Logger, Orchestrator } from "../src/models.ts";
-import { JobSQS, SQSBouncer } from "../src/queues.ts";
+import { JobSQS, WatchdogQueue } from "../src/queues.ts";
 import z from "zod";
 
 type HasStatus = { status: number };
@@ -78,7 +78,7 @@ const main = async () => {
 
   const sqsc = new SQSClient();
   const job = new JobSQS(sqsc, envs.jobUrl, envs.jobVisibilityTimeoutSecs, l);
-  const watchdawg = new SQSBouncer(
+  const watchdawg = new WatchdogQueue(
     sqsc,
     envs.watchdogUrl,
     envs.watchdogIntervalSecs,
