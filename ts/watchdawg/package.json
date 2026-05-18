@@ -1,9 +1,16 @@
 {
   "name": "@anterior/watchdawg",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "workflow agent watchdog to guarantee delivery",
   "type": "module",
   "license": "AGPL-3.0-only",
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.js"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -15,7 +22,7 @@
   "scripts": {
     "build": "tsc",
     "demo": "node ./src/test/demo-main.ts",
-    "integration": "node .src//test/integration-test.ts",
+    "integration": "node .src/test/integration-test.ts",
     "test": "node --test src/**/*.test.ts",
     "test:unit": "node --test src/**/*.test.ts",
     "prepack": "for f in ../../README.md ../../LICENSE ; do [ -f $f ] && cp $f . ; done"
