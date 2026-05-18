@@ -4,6 +4,7 @@ import { TextDecoder } from "node:util";
 import { z } from "zod";
 
 export {
+  // keep-sorted start
   bdecodeFromString,
   bencodeAsString,
   bytesToStr,
@@ -12,15 +13,19 @@ export {
   watchdogMsgRawPreParsedSchema,
   watchdogMsgRawSchema,
   watchdogMsgSchema,
+  // keep-sorted end
 };
 export type {
+  // keep-sorted start
   JobMsg,
   JobMsgRaw,
+  JobMsgUnparsed,
   Logger,
   Orchestrator,
   WatchdogAction,
   WatchdogMsg,
   WatchdogMsgRaw,
+  // keep-sorted end
 };
 
 const td = new TextDecoder("utf8", { fatal: true });
@@ -61,18 +66,27 @@ const jobMsgRawSchema = z.object({
   max_age_secs: z.union([z.int().positive(), z.undefined()]),
 }) satisfies z.ZodType<JobMsgRaw>;
 
-type JobMsg = JobMsgRaw & { msg_handle: string };
+type JobMsg = JobMsgRaw & {
+  msg_handle: string;
+  approx_receive_count: number;
+};
 const jobMsgSchema = z.object({
   msg: z.string(),
   max_age_secs: z.union([z.int().positive(), z.undefined()]),
   msg_handle: z.string(),
+  approx_receive_count: z.coerce.number().int(),
 }) satisfies z.ZodType<JobMsg>;
+/** JobMsg with the count as received from AWS, before coercion. */
+type JobMsgUnparsed = Omit<JobMsg, "approx_receive_count"> & {
+  approx_receive_count: string | undefined;
+};
 
 // with max_age for use by the bouncer
 type WatchdogMsgRaw = {
   max_age_secs: number;
   job_msg_handle: string;
   job_receipt: string;
+  job_approx_receive_count: number;
 };
 const watchdogMsgRawSchema = z.object({
   max_age_secs: z.int().positive(),
@@ -84,6 +98,8 @@ const watchdogMsgRawSchema = z.object({
   job_receipt: z
     .instanceof(Uint8Array)
     .transform((x, ctx) => bytesToStr(x, ctx)),
+
+  job_approx_receive_count: z.int(),
 }) satisfies z.ZodType<WatchdogMsgRaw>;
 /** same as watchdogMsgRawSchema except doesn't need parsing from bytes to string */
 const watchdogMsgRawPreParsedSchema = z.object({
@@ -92,6 +108,8 @@ const watchdogMsgRawPreParsedSchema = z.object({
   job_msg_handle: z.string(),
 
   job_receipt: z.string(),
+
+  job_approx_receive_count: z.int(),
 }) satisfies z.ZodType<WatchdogMsgRaw>;
 
 type WatchdogMsg = WatchdogMsgRaw & {
@@ -113,6 +131,7 @@ const watchdogMsgSchema = z.object({
   max_age_secs: z.int().positive(),
   job_msg_handle: z.string(),
   job_receipt: z.string(),
+  job_approx_receive_count: z.int(),
 }) satisfies z.ZodType<WatchdogMsg>;
 
 /** Actions for Watchdog to take based on the Orchestrator's command given a watchdog message.

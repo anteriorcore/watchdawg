@@ -82,6 +82,7 @@ async function handle1JobForever(
       job_msg_handle: job.msg_handle,
       max_age_secs: job.max_age_secs ?? maxWatchdogAgeSecs,
       job_receipt: jobReceipt,
+      job_approx_receive_count: job.approx_receive_count,
     } satisfies WatchdogMsgRaw);
     jobLogger
       .child({ watchdogMsg })
