@@ -10,7 +10,7 @@ import { JobSQS, WatchdogQueue } from "./queues.ts";
 
 export { amain, type JobMsgRaw };
 
-// this should really be typed with Promise<never> but ts doesn't like that. in our hearts.
+// This should really be typed with Promise<never> but ts doesn't like that.  In our hearts.
 async function amain(
   o: Orchestrator,
   jobsQueue: JobSQS,
@@ -26,17 +26,21 @@ async function amain(
     watchdogIntervalSecs: watchdogQueue.watchdogIntervalSecs,
   });
   logger.info(`starting agent. listening on jobQueue= ${jobsQueue.sqsUrl}`);
-  // effectively a select statement on the job queue and watchdog queue
-  // we long poll here for 1 message each, first to get a message will start being handled.
-  // note that we also handle all watchdog messages after we handle 1 job in the job loop
-  // to prioritize the watchdog messages
+
+  // Effectively a select statement on the job queue and watchdog queue.  We
+  // long poll here for 1 message each, first to get a message will start being
+  // handled.  Note that we also handle all watchdog messages after we handle 1
+  // job in the job loop to prioritize the watchdog messages
   await Promise.all([
     watchdogLoopForever(o, jobsQueue, watchdogQueue, logger),
     handle1JobForever(o, jobsQueue, watchdogQueue, maxWatchdogAgeSecs, logger),
   ]);
 }
 
-/** keep exhausting the watchdog queue with a long poll on the watchdog queue, deleting old messages */
+/**
+ * Keep exhausting the watchdog queue with a long poll on the watchdog queue,
+ * deleting old messages.
+ */
 async function watchdogLoopForever(
   o: Orchestrator,
   jobsQueue: JobSQS,
@@ -48,8 +52,9 @@ async function watchdogLoopForever(
   }
 }
 
-/**  handle one job from the job queue if exists,
- * then exhaust the entire watchdog queue
+/**
+ * Handle one job from the job queue if exists, then exhaust the entire
+ * watchdog queue.
  */
 async function handle1JobForever(
   o: Orchestrator,
@@ -68,24 +73,24 @@ async function handle1JobForever(
     jobLogger.debug(`found job in job queue!`);
 
     const jobReceipt = await o.schedule(job.msg);
-    jobLogger.info(`scheduled job to orchestrator. jobReceipt= ${jobReceipt}`, {
-      jobReceipt,
-    });
+    jobLogger
+      .child({ jobReceipt })
+      .info(`scheduled job to orchestrator. jobReceipt= ${jobReceipt}`);
 
     const watchdogMsg: WatchdogMsgRaw = watchdogMsgRawPreParsedSchema.parse({
       job_msg_handle: job.msg_handle,
       max_age_secs: job.max_age_secs ?? maxWatchdogAgeSecs,
       job_receipt: jobReceipt,
     } satisfies WatchdogMsgRaw);
-    jobLogger.debug(`enqueuing message on watchdog queue. ${jobReceipt}`, {
-      watchdogMsg,
-    });
+    jobLogger
+      .child({ watchdogMsg })
+      .debug(`enqueuing message on watchdog queue. ${jobReceipt}`);
     await watchdogQueue.send(watchdogMsg);
 
-    // for every 1 message received, we exhaust the watchdog queue.
-    // this functions as a sort of rate limiter.
-    // can't start new jobs when we have watchdog msgs to deal with.
-    // but we do a short non blocking poll here.
+    // For every 1 message received, we exhaust the watchdog queue.  This
+    // functions as a sort of rate limiter -- we cannot start new jobs when we
+    // have watchdog messages to deal with.  But we do a short non blocking poll
+    // here.
     await watchdogLoop(o, jobsQueue, watchdogQueue, logger, false);
   }
 }

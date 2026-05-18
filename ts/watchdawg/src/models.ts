@@ -45,9 +45,10 @@ const bytesToStr = (bytes: Uint8Array, ctx: z.RefinementCtx) => {
   }
 };
 
-/** the msg in a JobMsgRaw can be anything you can later parse out that includes the information to
- * schedule a job.
- * note that the string in msg MUST be compatible with SQS's subset of accepted string characters:
+/**
+ * The msg in a JobMsgRaw can be anything you can later parse out that includes
+ * the information to schedule a job.  Note that the string in msg MUST be
+ * compatible with SQS's subset of accepted string characters:
  * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
  * */
 type JobMsgRaw = { msg: string; max_age_secs?: number | undefined };
@@ -111,10 +112,13 @@ const watchdogMsgSchema = z.object({
   job_receipt: z.string(),
 }) satisfies z.ZodType<WatchdogMsg>;
 
-/** Orchestrator is provided by user of this program. It exposes a method which takes the `msg` from
- * the JobMsg and schedules it, returning a job receipt. That job receipt is later used by the
- * exposed method read which takes that jobReceipt (after it goes through the watchdog queue in an
- * WatchdogMsg) and returns a boolean indicating if the orchestrated task is completed / has a value.
+/**
+ * Orchestrator is provided by user of this program.  It exposes a method which
+ * takes the `msg` from the JobMsg and schedules it, returning a job receipt.
+ * That job receipt is later used by the exposed method read which takes that
+ * jobReceipt (after it goes through the watchdog queue in a WatchdogMsg) and
+ * returns a boolean indicating if the orchestrated task is completed / has a
+ * value.
  * */
 type Orchestrator = {
   /** schedule is called after receiving a JobMsg from the job queue. The received JobMsg.msg is
@@ -126,21 +130,22 @@ type Orchestrator = {
   read: (jobReceipt: string) => Promise<boolean>;
 };
 
-/** Standalone logger definition so this can be used with any logger (with a shim).
- * These are the basic log functions that are required.
+/**
+ * Standalone logger definition so this can be used with any logger (with a
+ * shim).  These are the basic log functions that are required.
  */
 type Logger = {
-  // fork with bound context
+  /**
+   * Fork with bound context.
+   * Can also use inline to add context like logger.child({foo: 123}).info("hello")
+   */
   child: (ctx: Record<string, any>) => Logger;
 
-  trace: (message: string, args?: Record<string, any> | unknown) => void;
-  debug: (message: string, args?: Record<string, any> | unknown) => void;
-  info: (message: string, args?: Record<string, any> | unknown) => void;
-  warn: (message: string, args?: Record<string, any> | unknown) => void;
+  trace: (message: string) => void;
+  debug: (message: string) => void;
+  info: (message: string) => void;
+  warn: (message: string) => void;
   // Allow unknown because technically in javascript you could throw anything and therefore catch
   // anything.  But assume it’s an Error.
-  error: (
-    err: Error | unknown | string,
-    args?: Record<string, any> | unknown,
-  ) => void;
+  error: (err: Error | unknown | string) => void;
 };
