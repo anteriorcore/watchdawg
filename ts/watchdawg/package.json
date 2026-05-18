@@ -15,6 +15,7 @@
   "files": [
     "dist"
   ],
+  "repository": "git+https://github.com/anteriorcore/watchdawg",
   "bin": {
     "demo-main": "test/demo-main.ts",
     "integration-test": "test/integration-test.ts"
