@@ -117,8 +117,9 @@ type Orchestrator = {
   read: (jobReceipt: string) => Promise<boolean>;
 };
 
-/** standalone logger definition so this can be used with any logger (with a shim).
- * these are the basic log functions that are required. */
+/** Standalone logger definition so this can be used with any logger (with a shim).
+ * These are the basic log functions that are required.
+ */
 type Logger = {
   // fork with bound context
   child: (ctx: Record<string, any>) => Logger;
