@@ -1,14 +1,14 @@
 #!/usr/bin/env node --enable-source-maps
 
 import { SQSClient } from "@aws-sdk/client-sqs";
-import { amain } from "../src/app.ts";
+import { amain } from "../app.ts";
 import type {
   Logger,
   Orchestrator,
   WatchdogAction,
   WatchdogMsg,
-} from "../src/models.ts";
-import { JobSQS, WatchdogQueue } from "../src/queues.ts";
+} from "../models.ts";
+import { JobSQS, WatchdogQueue } from "../queues.ts";
 import z from "zod";
 
 type HasStatus = { status: number };
