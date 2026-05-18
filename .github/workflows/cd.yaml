@@ -1,0 +1,31 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-to-npm:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "ts/watchdawg"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        # TODO: get npm from nix develop
+      - run: |
+          npm config set registry https://registry.npmjs.org
+      - run: npm ci
+      - run: |
+          printf '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > ~/.npmrc
+      - run: npm run build
+        # Publish a new version to npm by bumping the version number in
+        # package.json manually.  npm will reject versions with existing
+        # version numbers.
+      - run: npm publish --access public --provenance
