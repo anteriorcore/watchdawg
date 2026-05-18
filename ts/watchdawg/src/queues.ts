@@ -11,6 +11,7 @@ import {
   bencodeAsString,
   jobMsgSchema,
   watchdogMsgSchema,
+  type JobMsgUnparsed,
   type Logger,
 } from "./models.ts";
 
@@ -105,6 +106,7 @@ class WatchdogQueue {
         watchdog_msg_handle: msg.ReceiptHandle,
         job_msg_handle: parsed.job_msg_handle,
         job_receipt: parsed.job_receipt,
+        job_approx_receive_count: parsed.job_approx_receive_count,
       } satisfies WatchdogMsg);
     }
   }
@@ -183,7 +185,8 @@ class JobSQS {
     return jobMsgSchema.parse({
       ...parsed.data,
       msg_handle: res.Messages[0].ReceiptHandle,
-    } satisfies JobMsg);
+      approx_receive_count: res.Messages[0].Attributes?.ApproximateReceiveCount,
+    } satisfies JobMsgUnparsed);
   }
 
   async delete(msgHandle: string): Promise<void> {
