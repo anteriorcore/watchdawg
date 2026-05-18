@@ -12,12 +12,15 @@ export {
   watchdogMsgRawPreParsedSchema,
   watchdogMsgRawSchema,
   watchdogMsgSchema,
-  type JobMsg,
-  type JobMsgRaw,
-  type Logger,
-  type Orchestrator,
-  type WatchdogMsg,
-  type WatchdogMsgRaw,
+};
+export type {
+  JobMsg,
+  JobMsgRaw,
+  Logger,
+  Orchestrator,
+  WatchdogAction,
+  WatchdogMsg,
+  WatchdogMsgRaw,
 };
 
 const td = new TextDecoder("utf8", { fatal: true });
@@ -112,22 +115,38 @@ const watchdogMsgSchema = z.object({
   job_receipt: z.string(),
 }) satisfies z.ZodType<WatchdogMsg>;
 
+/** Actions for Watchdog to take based on the Orchestrator's command given a watchdog message.
+ *
+ * Where w is watchdog queue, j is job queue, x is delete, blank is do nothing, and p is punt:
+ *
+ * |action/queue| w | j
+ * |------------|---|--
+ * | DONE       | x | x
+ * | STALE      | x |
+ * | WORKING    |   | p
+ */
+type WatchdogAction = "WORKING" | "STALE" | "DONE";
+
 /**
  * Orchestrator is provided by user of this program.  It exposes a method which
  * takes the `msg` from the JobMsg and schedules it, returning a job receipt.
  * That job receipt is later used by the exposed method read which takes that
- * jobReceipt (after it goes through the watchdog queue in a WatchdogMsg) and
- * returns a boolean indicating if the orchestrated task is completed / has a
- * value.
- * */
+ * jobReceipt (after it goes through the watchdog queue in an WatchdogMsg) and
+ * returns a flag indicating the status of the orchestrated task.
+ */
 type Orchestrator = {
-  /** schedule is called after receiving a JobMsg from the job queue. The received JobMsg.msg is
-   * passed as the parameter. It returns a job receipt that can be used to check on the status of
-   * the task later. */
+  /**
+   * schedule is called after receiving a JobMsg from the job queue.  The
+   * received JobMsg.msg is passed as the parameter.  It returns a job receipt
+   * that can be used to check on the status of the task later.
+   */
   schedule: (msg: string) => Promise<string>;
-  /** read is called after receiving a message on the watchdog queue. The WatchdogMsg.job_receipt is
-   * passed as the parameter and the function returns a boolean if the task is complete. */
-  read: (jobReceipt: string) => Promise<boolean>;
+  /**
+   * read is called after receiving a message on the watchdog queue.  The
+   * WatchdogMsg.job_receipt is passed as the parameter and the function
+   * returns a flag representing the task's state.
+   */
+  read: (watchdogMsg: WatchdogMsg) => Promise<{ action: WatchdogAction }>;
 };
 
 /**
@@ -136,8 +155,8 @@ type Orchestrator = {
  */
 type Logger = {
   /**
-   * Fork with bound context.
-   * Can also use inline to add context like logger.child({foo: 123}).info("hello")
+   * Fork with bound context. Can also use inline to add context like
+   * logger.child({foo: 123}).info("hello")
    */
   child: (ctx: Record<string, any>) => Logger;
 
@@ -145,7 +164,7 @@ type Logger = {
   debug: (message: string) => void;
   info: (message: string) => void;
   warn: (message: string) => void;
-  // Allow unknown because technically in javascript you could throw anything and therefore catch
-  // anything.  But assume it’s an Error.
+  // Allow unknown because technically in javascript you could throw anything
+  // and therefore catch anything.  But assume it’s an Error.
   error: (err: Error | unknown | string) => void;
 };

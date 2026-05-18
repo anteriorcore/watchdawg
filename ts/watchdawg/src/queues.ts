@@ -117,29 +117,6 @@ class WatchdogQueue {
       }),
     );
   }
-
-  async deleteIfStale(msg: WatchdogMsg): Promise<boolean> {
-    const logger = this.logger.child({ watchdogMsg: msg });
-
-    // take in time as param? or di clock?
-    const expiry =
-      +(msg.watchdog_msg_attributes?.SentTimestamp || "0") / 1e3 +
-      msg.max_age_secs;
-    const now = Date.now() / 1e3;
-    logger
-      .child({ expiry, now })
-      .debug(`watchdog message expiry= ${expiry} time now= ${now}`);
-
-    if (expiry < now) {
-      logger.info(
-        `deleting old message from watchdog queue so it's retried in the job queue or sent to the DLQ. orchestrator jobReceipt: ${msg.job_receipt}`,
-      );
-      await this.delete(msg.watchdog_msg_handle);
-      return true;
-    }
-
-    return false;
-  }
 }
 
 /**
