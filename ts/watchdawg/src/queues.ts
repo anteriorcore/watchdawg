@@ -25,13 +25,15 @@ import {
 export { JobSQS, WatchdogQueue };
 
 /**
- * WatchdogQueue reads messages from SQS, with options for long or short polling, and returns those
- * messages in an AsyncGenerator. This is for the watchdog queue. Messages are put here when a job
- * is scheduled with brrr so we can check the return status and reschedule jobs if not completed. It
- * doesn't manually punt, but just allows messages to become visible again after e.g. 1m. When a
- * message is deemed too old to be waited on, the consumer can delete the message from this queue
- * which will have us stop punting the job queue message, and therefore the job will become visible
- * again in the job queue and the main loop can schedule it again.
+ * WatchdogQueue reads messages from SQS, with options for long or short
+ * polling, and returns those messages in an AsyncGenerator.  This is for the
+ * watchdog queue.  Messages are put here when a job is scheduled with the
+ * orchestrator so we can check the return status and reschedule jobs if not
+ * completed. It doesn't manually punt, but just allows messages to become
+ * visible again after e.g. 1m.  When a message is deemed too old to be waited
+ * on, the consumer can delete the message from this queue which will have us
+ * stop punting the job queue message, and therefore the job will become
+ * visible again in the job queue and the main loop can schedule it again.
  */
 class WatchdogQueue {
   readonly sqsc: SQSClient;
@@ -124,10 +126,9 @@ class WatchdogQueue {
       +(msg.watchdog_msg_attributes?.SentTimestamp || "0") / 1e3 +
       msg.max_age_secs;
     const now = Date.now() / 1e3;
-    logger.debug(`watchdog message expiry= ${expiry} time now= ${now}`, {
-      expiry,
-      now,
-    });
+    logger
+      .child({ expiry, now })
+      .debug(`watchdog message expiry= ${expiry} time now= ${now}`);
 
     if (expiry < now) {
       logger.info(
@@ -141,12 +142,13 @@ class WatchdogQueue {
   }
 }
 
-/** the job queue
+/**
+ * The job queue.
  *
- * the job queue is very simple.  receive messages others scheduled for
- * watchdawg to turn into orchestrator jobs.  we punt messages (increase the
- * visibility timeout) we're still waiting for a value in the orchestrator.  we
- * delete messages when the job is complete in the orchestrator.
+ * The job queue is very simple.  Receive messages other ppl scheduled for us
+ * to turn into orchestrator jobs.  We punt messages (increase the visibility
+ * timeout) we're still waiting for a value in the orchestrator.  We delete
+ * messages when the job is complete in the orchestrator.
  */
 class JobSQS {
   readonly sqsc: SQSClient;
@@ -177,20 +179,20 @@ class JobSQS {
 
     if (!res.Messages?.[0]?.Body) return null;
 
-    this.logger.debug("message received on job queue", {
-      rawBody: res.Messages[0].Body,
-    });
+    this.logger
+      .child({ rawBody: res.Messages[0].Body })
+      .debug("message received on job queue");
 
     const parsed = jobMsgRawSchema.safeParse(
       bdecodeFromString(res.Messages[0].Body),
     );
     if (!parsed.success) {
-      this.logger.error(
-        "could not parse orchestrator job message wrapper! allow it to go to dlq. " +
-          `message body: ${res.Messages[0].Body}` +
-          `parse error: ${parsed.error.message}`,
-        { res, parsed },
-      );
+      this.logger
+        .child({ res, parsed })
+        .error(
+          "could not parse orchestrator job message wrapper! allow it to go to dlq. " +
+            `message body: ${res.Messages[0].Body} parse error: ${parsed.error.message}`,
+        );
       // if this is null just return null and it'll be ignored and make its way
       // to the dlq if we throw, we risk ruining the queue with this evil
       // message

@@ -31,23 +31,20 @@ class ConsoleLogger implements Logger {
   public child(ctx: Record<string, any>) {
     return new ConsoleLogger({ ...ctx, ...this.context });
   }
-  trace(message: string, args?: Record<string, any> | unknown): void {
-    console.log("TRACE " + message, { ...this.context, ...(args ?? {}) });
+  trace(message: string): void {
+    console.log("TRACE " + message, { ...this.context });
   }
-  debug(message: string, args?: Record<string, any> | unknown): void {
-    console.log("DEBUG " + message, { ...this.context, ...(args ?? {}) });
+  debug(message: string): void {
+    console.log("DEBUG " + message, { ...this.context });
   }
-  info(message: string, args?: Record<string, any> | unknown): void {
-    console.log("INFO " + message, { ...this.context, ...(args ?? {}) });
+  info(message: string): void {
+    console.log("INFO " + message, { ...this.context });
   }
-  warn(message: string, args?: Record<string, any> | unknown): void {
-    console.log("WARN " + message, { ...this.context, ...(args ?? {}) });
+  warn(message: string): void {
+    console.log("WARN " + message, { ...this.context });
   }
-  error(
-    err: Error | unknown | string,
-    args?: Record<string, any> | unknown,
-  ): void {
-    console.log("ERROR ", err, { ...this.context, ...(args ?? {}) });
+  error(err: Error | unknown | string): void {
+    console.log("ERROR ", err, { ...this.context });
   }
 }
 
