@@ -22,21 +22,18 @@ import {
   type WatchdogMsgRaw,
 } from "./models.ts";
 
-export { JobSQS, SQSBouncer };
+export { JobSQS, WatchdogQueue };
 
 /**
- * SQSBouncer
- * reads messages from SQS, deleting any messages it encounters
- * which are older than the message's max age.  This is for the watchdog queue.
- * Messages are put here when a job is scheduled with the orchestrator so we
- * can check up on the return status and reschedule jobs if not completed.  It
- * doesn't manually punt, but just allows messages to become visible again
- * after e.g. 1m.  When a message is deemed too old to be waited on, we delete
- * the message from this queue which will have us stop punting the job queue
- * message, meaning the job will become visible again in the job queue and the
- * main loop can schedule it again.
+ * WatchdogQueue reads messages from SQS, with options for long or short polling, and returns those
+ * messages in an AsyncGenerator. This is for the watchdog queue. Messages are put here when a job
+ * is scheduled with brrr so we can check the return status and reschedule jobs if not completed. It
+ * doesn't manually punt, but just allows messages to become visible again after e.g. 1m. When a
+ * message is deemed too old to be waited on, the consumer can delete the message from this queue
+ * which will have us stop punting the job queue message, and therefore the job will become visible
+ * again in the job queue and the main loop can schedule it again.
  */
-class SQSBouncer {
+class WatchdogQueue {
   readonly sqsc: SQSClient;
   readonly sqsUrl: string;
   readonly watchdogIntervalSecs: number;
@@ -60,13 +57,11 @@ class SQSBouncer {
     );
   }
 
-  /**  `receive` which deletes messages that are too old ("max age") and keep
-   * receiving new messages until we find a valid-aged message or the queue is
-   * exhausted
-   *
-   * this is the bouncer functionality
+  /**
+   * `receive` which is an async generator of WatchdogMsg with enough information to delete/punt or
+   * determine if the message is "stale".
    */
-  async receive(longPoll: boolean): Promise<WatchdogMsg | null> {
+  async *receive(longPoll: boolean): AsyncGenerator<WatchdogMsg | null> {
     for (;;) {
       const res = await this.sqsc.send(
         new ReceiveMessageCommand({
@@ -78,12 +73,18 @@ class SQSBouncer {
       );
 
       // no messages in the queue
-      if (!res.Messages?.[0]) return null;
+      if (!res.Messages?.[0]) {
+        yield null;
+        continue;
+      }
+
       const msg = res.Messages[0];
-      this.logger.debug("message received on watchdog queue", {
-        rawBody: msg.Body,
-        watchdogHandle: msg.ReceiptHandle,
+      let logger = this.logger.child({
+        watchdogReceiptHandle: msg.ReceiptHandle,
+        watchdog_msg_attributes: msg.Attributes,
+        longPoll,
       });
+      logger.child({ rawBody: msg.Body }).debug("watchdog queue raw message.");
 
       if (!(msg.Body && msg.ReceiptHandle)) {
         throw new Error(
@@ -92,62 +93,17 @@ class SQSBouncer {
       }
 
       const parsed = watchdogMsgRawSchema.parse(bdecodeFromString(msg.Body));
+      logger
+        .child({ watchdogMsg: parsed })
+        .debug("message received on watchdog queue");
 
-      let logger = this.logger.child({
-        watchdogMsg: parsed,
-        watchdogReceiptHandle: msg.ReceiptHandle,
-        longPoll,
-      });
-      logger.debug("message received on watchdog queue", { rawBody: msg.Body });
-
-      // take in time as param? or di clock?
-      const expiry =
-        +(msg.Attributes?.SentTimestamp || "0") / 1e3 + parsed.max_age_secs;
-      const now = Date.now() / 1e3;
-      logger.debug(`watchdog message expiry= ${expiry} time now= ${now}`, {
-        expiry,
-        now,
-      });
-      if (expiry < now) {
-        logger.info(
-          `deleting old message from watchdog queue so it's retried in the job queue. orchestrator jobReceipt: ${parsed.job_receipt}`,
-        );
-        await this.delete(msg.ReceiptHandle);
-        continue;
-      }
-
-      return watchdogMsgSchema.parse({
+      yield watchdogMsgSchema.parse({
+        max_age_secs: parsed.max_age_secs,
+        watchdog_msg_attributes: msg.Attributes,
         watchdog_msg_handle: msg.ReceiptHandle,
         job_msg_handle: parsed.job_msg_handle,
         job_receipt: parsed.job_receipt,
       } satisfies WatchdogMsg);
-    }
-  }
-
-  /**
-   * Drain all messages from the receive queue until none are left.
-   *
-   * Compare this to calling a short poll receive in a loop until it returns null.
-   */
-  async *drain(): AsyncGenerator<WatchdogMsg> {
-    for (;;) {
-      const msg = await this.receive(false);
-      if (!msg) {
-        break;
-      }
-      yield msg;
-    }
-  }
-
-  /**
-   * Keep reading messages from the queue, long polling, forever and ever.
-   */
-  async *readAll(): AsyncGenerator<WatchdogMsg> {
-    for (;;) {
-      const msg = await this.receive(true);
-      if (msg) {
-        yield msg;
-      }
     }
   }
 
@@ -158,6 +114,30 @@ class SQSBouncer {
         ReceiptHandle: msgHandle,
       }),
     );
+  }
+
+  async deleteIfStale(msg: WatchdogMsg): Promise<boolean> {
+    const logger = this.logger.child({ watchdogMsg: msg });
+
+    // take in time as param? or di clock?
+    const expiry =
+      +(msg.watchdog_msg_attributes?.SentTimestamp || "0") / 1e3 +
+      msg.max_age_secs;
+    const now = Date.now() / 1e3;
+    logger.debug(`watchdog message expiry= ${expiry} time now= ${now}`, {
+      expiry,
+      now,
+    });
+
+    if (expiry < now) {
+      logger.info(
+        `deleting old message from watchdog queue so it's retried in the job queue or sent to the DLQ. orchestrator jobReceipt: ${msg.job_receipt}`,
+      );
+      await this.delete(msg.watchdog_msg_handle);
+      return true;
+    }
+
+    return false;
   }
 }
 

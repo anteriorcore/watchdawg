@@ -1,3 +1,4 @@
+import { MessageSystemAttributeName } from "@aws-sdk/client-sqs";
 import bencodelib from "bencode";
 import { TextDecoder } from "node:util";
 import { z } from "zod";
@@ -89,16 +90,24 @@ const watchdogMsgRawPreParsedSchema = z.object({
   job_receipt: z.string(),
 }) satisfies z.ZodType<WatchdogMsgRaw>;
 
-type WatchdogMsg = {
+type WatchdogMsg = WatchdogMsgRaw & {
   watchdog_msg_handle: string;
-  job_msg_handle: string;
-  job_receipt: string;
+  // type lifted from AWS SDK
+  watchdog_msg_attributes:
+    | Partial<Record<MessageSystemAttributeName, string>>
+    | undefined;
 };
 const watchdogMsgSchema = z.object({
   watchdog_msg_handle: z.string(),
 
-  job_msg_handle: z.string(),
+  watchdog_msg_attributes: z.union([
+    z.partialRecord(z.enum(MessageSystemAttributeName), z.string()),
+    z.undefined(),
+  ]),
 
+  // from raw
+  max_age_secs: z.int().positive(),
+  job_msg_handle: z.string(),
   job_receipt: z.string(),
 }) satisfies z.ZodType<WatchdogMsg>;
 
