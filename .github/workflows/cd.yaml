@@ -19,6 +19,14 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         # TODO: get npm from nix develop
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+      - run: |
+          # https://github.com/actions/setup-node/issues/1440
+          echo 'NODE_AUTH_TOKEN=""' >> $GITHUB_ENV
       - run: |
           npm config set registry https://registry.npmjs.org
       - run: npm ci
