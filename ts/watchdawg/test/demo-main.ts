@@ -2,24 +2,54 @@
 
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { amain } from "../src/app.ts";
-import type { Logger, Orchestrator } from "../src/models.ts";
+import type {
+  Logger,
+  Orchestrator,
+  WatchdogAction,
+  WatchdogMsg,
+} from "../src/models.ts";
 import { JobSQS, WatchdogQueue } from "../src/queues.ts";
 import z from "zod";
 
 type HasStatus = { status: number };
 class WebOrchestrator implements Orchestrator {
   readonly domain: string;
+  readonly logger: Logger;
   constructor(domain: string) {
     this.domain = domain;
+    this.logger = new ConsoleLogger({});
   }
   public async schedule(msg: string): Promise<string> {
     await fetch(`${this.domain}/${msg}`, { method: "PUT" });
     return msg;
   }
 
-  public async read(jobReceipt: string): Promise<boolean> {
-    const res = await fetch(`${this.domain}/${jobReceipt}`, { method: "GET" });
-    return ((await res.json()) as HasStatus).status === 2;
+  public async read(msg: WatchdogMsg): Promise<{ action: WatchdogAction }> {
+    const res = await fetch(`${this.domain}/${msg.job_receipt}`, {
+      method: "GET",
+    });
+    if (((await res.json()) as HasStatus).status === 2) {
+      return { action: "DONE" };
+    }
+
+    const expiry =
+      +(msg.watchdog_msg_attributes?.SentTimestamp || "0") / 1e3 +
+      msg.max_age_secs;
+    const now = Date.now() / 1e3;
+    this.logger
+      .child({ expiry, now, watchdogMsg: msg })
+      .debug(`watchdog message expiry= ${expiry} time now= ${now}`);
+    if (expiry < now) return { action: "STALE" }; // causes a toplevel retry
+
+    // There isn't actually a concept in the dummy orchestrator if something
+    // is still working, so we just say it's working for the maximum time.
+    // In a real system you would have something like a heartbeat
+    // sidechannel to communicate in the distributed system if a worker is
+    // still working or it died.
+    // TODO: implement and test some concept of "working" vs "dead" in the
+    // dummy orchestrator.
+    // BenZ 202605
+    return { action: "WORKING" };
   }
 }
 

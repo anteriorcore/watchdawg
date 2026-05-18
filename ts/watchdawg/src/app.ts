@@ -1,6 +1,7 @@
 import {
   watchdogMsgRawPreParsedSchema,
   type Logger,
+  type WatchdogMsg,
   type WatchdogMsgRaw,
 } from "./models.ts";
 
@@ -113,27 +114,61 @@ async function watchdogLoop(
     ? filter(source, (msg) => msg !== null)
     : takeWhile(source, (msg) => msg !== null);
   for await (const watchdogMsg of msgs) {
-    const l = logger.child({ watchdogMsg });
+    const { action } = await o.read(watchdogMsg);
 
-    // for both drain and read loop
-    if (await watchdogQueue.deleteIfStale(watchdogMsg)) continue;
+    const l = logger.child({ action, watchdogMsg });
 
     l.info(
-      `watchdog queue has received a message jobReceipt= ${watchdogMsg.job_receipt} . Reading status from Orchestrator.`,
+      `watchdog queue has received a message jobReceipt= ${watchdogMsg.job_receipt} . Orchestrator requests action= ${action}.`,
     );
-    if (await o.read(watchdogMsg.job_receipt)) {
-      l.debug(
-        `job with orchestrator jobReceipt= ${watchdogMsg.job_receipt} complete, deleting from both queues`,
-      );
-      await Promise.all([
-        jobsQueue.delete(watchdogMsg.job_msg_handle),
-        watchdogQueue.delete(watchdogMsg.watchdog_msg_handle),
-      ]);
-    } else {
-      l.debug(
-        `job with orchestrator jobReceipt: ${watchdogMsg.job_receipt} not complete, punting in job queue for ${jobsQueue.jobVisibilityTimeoutSecs} seconds`,
-      );
-      await jobsQueue.punt(watchdogMsg.job_msg_handle);
+    switch (action) {
+      case "DONE":
+        l.debug(
+          `job with orchestrator jobReceipt= ${watchdogMsg.job_receipt} complete, deleting from both queues`,
+        );
+        await deleteFromBoth(watchdogMsg, jobsQueue, watchdogQueue);
+        continue;
+      case "WORKING":
+        l.debug(
+          `job with orchestrator jobReceipt: ${watchdogMsg.job_receipt} not complete, punting in job queue for ${jobsQueue.jobVisibilityTimeoutSecs} seconds`,
+        );
+        await puntJob(watchdogMsg, jobsQueue, watchdogQueue);
+        continue;
+      case "STALE":
+        l.info(
+          `deleting stale message from watchdog queue so it's retried in the job queue or sent to the DLQ. orchestrator jobReceipt: ${watchdogMsg.job_receipt}`,
+        );
+        await deleteFromWatchdog(watchdogMsg, jobsQueue, watchdogQueue);
+        continue;
+      default:
+        const _never: never = action;
+        throw new Error(`non-exhaustive switch ${_never}`);
     }
   }
 }
+
+const deleteFromWatchdog: Action = async (watchdogMsg, _, watchdogQueue) => {
+  await watchdogQueue.delete(watchdogMsg.watchdog_msg_handle);
+};
+
+const deleteFromBoth: Action = async (
+  watchdogMsg,
+  jobsQueue,
+  watchdogQueue,
+) => {
+  await Promise.all([
+    jobsQueue.delete(watchdogMsg.job_msg_handle),
+    watchdogQueue.delete(watchdogMsg.watchdog_msg_handle),
+  ]);
+};
+
+const puntJob: Action = async (watchdogMsg, jobsQueue, _) => {
+  await jobsQueue.punt(watchdogMsg.job_msg_handle);
+};
+
+/**Actions the Orchestrator can request after seeing a watchdog message.*/
+type Action = (
+  watchdogMsg: WatchdogMsg,
+  jobsQueue: JobSQS,
+  watchdogQueue: WatchdogQueue,
+) => Promise<void>;
