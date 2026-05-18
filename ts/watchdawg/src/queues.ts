@@ -126,7 +126,8 @@ class SQSBouncer {
       // take in time as param? or di clock?
 
       const expiry =
-        +(msg.Attributes?.SentTimestamp ?? "") / 1e3 + parsed.data.max_age_secs;
+        +(msg.Attributes?.SentTimestamp || "0") / 1e3 +
+        parsed.data.max_age_secs;
       const now = Date.now() / 1e3;
       logger.debug(
         `watchdog message expiry= ${expiry.toString()} time now= ${now.toString()}`,
