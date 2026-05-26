@@ -1,5 +1,8 @@
 #!/usr/bin/env node --enable-source-maps
 
+// Copyright © 2026 Anterior <tech@anterior.com>
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { amain } from "../app.ts";
 import type {
