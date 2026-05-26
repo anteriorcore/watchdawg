@@ -1,5 +1,8 @@
 #!/usr/bin/env node --enable-source-maps
 
+// Copyright © 2026 Anterior <tech@anterior.com>
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import assert from "node:assert/strict";
 import { setTimeout } from "timers/promises";
 import { test } from "node:test";

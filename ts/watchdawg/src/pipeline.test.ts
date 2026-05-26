@@ -1,3 +1,6 @@
+// Copyright © 2026 Anterior <tech@anterior.com>
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { deepStrictEqual, ok } from "node:assert/strict";
 import test, { describe } from "node:test";
 import { filter, takeWhile } from "./pipeline.ts";

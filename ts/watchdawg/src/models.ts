@@ -1,3 +1,6 @@
+// Copyright © 2026 Anterior <tech@anterior.com>
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { MessageSystemAttributeName } from "@aws-sdk/client-sqs";
 import bencodelib from "bencode";
 import { TextDecoder } from "node:util";
