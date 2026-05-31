@@ -160,11 +160,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778877151,
-        "narHash": "sha256-BH+eW3XqNLgraCvm5C6ke446i1GNy1VjS+uKRQjKZts=",
+        "lastModified": 1779159563,
+        "narHash": "sha256-pwbR02wYEHWwCxZ2UCNEF4h1NEvzCExLNaoRfqJdDSM=",
         "owner": "anteriorcore",
         "repo": "tools",
-        "rev": "9fcd6e1fed3819e8a5ac693f37afa9dc224338d1",
+        "rev": "dd4d18c3ad836b44e33e892687a324e7b01d13b7",
         "type": "github"
       },
       "original": {
