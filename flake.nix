@@ -17,7 +17,7 @@
   inputs = {
     # keep-sorted start block=true
     flake-parts.url = "flake-parts";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
     package-lock2nix = {
       url = "github:anteriorai/package-lock2nix";
       inputs.nixpkgs.follows = "nixpkgs";
