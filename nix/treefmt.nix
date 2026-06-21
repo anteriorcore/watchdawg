@@ -1,8 +1,7 @@
 # Copyright © 2026 Anterior <tech@anterior.com>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-{ ... }:
-{
+{ ... }: {
   perSystem.treefmt = {
     projectRootFile = "flake.nix";
     programs = {
