@@ -20,110 +20,102 @@ pkgs.testers.runNixOSTest {
   name = "test-watchdawg";
   globalTimeout = 5 * 60;
   nodes = {
-    datastores =
-      { config, pkgs, ... }:
-      {
-        imports = [ elasticmq ];
-        systemd.enableStrictShellChecks = true;
-        services.elasticmq = {
-          enable = true;
-          openFirewall = true;
+    datastores = { config, pkgs, ... }: {
+      imports = [ elasticmq ];
+      systemd.enableStrictShellChecks = true;
+      services.elasticmq = {
+        enable = true;
+        openFirewall = true;
+      };
+      systemd.services.elasticmq = {
+        postStart = "wait-for-port ${toString config.services.elasticmq.port}";
+        path = [ pkgs.wait-for-port ];
+      };
+      systemd.services.elasticmq-init = {
+        before = [ "multi-user.target" ];
+        requiredBy = [ "multi-user.target" ];
+        after = [ "elasticmq.service" ];
+        requires = [ "elasticmq.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          Restart = "no";
         };
-        systemd.services.elasticmq = {
-          postStart = "wait-for-port ${toString config.services.elasticmq.port}";
-          path = [ pkgs.wait-for-port ];
-        };
-        systemd.services.elasticmq-init = {
-          before = [ "multi-user.target" ];
-          requiredBy = [ "multi-user.target" ];
-          after = [ "elasticmq.service" ];
-          requires = [ "elasticmq.service" ];
+        environment = awsConfig;
+        script = ''
+          aws sqs create-queue --queue-name jobQueue
+          aws sqs create-queue --queue-name jobQueueDl
+          aws sqs create-queue --queue-name watchdogQueue
+          aws sqs set-queue-attributes \
+            --queue-url http://localhost:4566/000000000000/jobQueue \
+            --attributes '{ "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:000000000000:jobQueueDl\",\"maxReceiveCount\":\"3\"}" }'
+        '';
+        path = [ pkgs.awscli2 ];
+      };
+    };
+    watchdawg = { pkgs, ... }: {
+      systemd.services.watchdawg =
+        let
+          inherit (pkgs.stdenv.hostPlatform) system;
+        in
+        {
           serviceConfig = {
             Type = "oneshot";
             Restart = "no";
+            RemainAfterExit = "yes";
+            ExecStart = "${self.packages.${system}.watchdawg}/bin/demo-main";
           };
-          environment = awsConfig;
-          script = ''
-            aws sqs create-queue --queue-name jobQueue
-            aws sqs create-queue --queue-name jobQueueDl
-            aws sqs create-queue --queue-name watchdogQueue
-            aws sqs set-queue-attributes \
-              --queue-url http://localhost:4566/000000000000/jobQueue \
-              --attributes '{ "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:000000000000:jobQueueDl\",\"maxReceiveCount\":\"3\"}" }'
-          '';
-          path = [ pkgs.awscli2 ];
+          preStart = "";
+          environment = {
+            orchestratorDomain = "http://orchestrator:9991";
+            jobUrl = "http://datastores:9324/000000000000/jobQueue";
+            watchdogUrl = "http://datastores:9324/000000000000/watchdogQueue";
+            jobVisibilityTimeoutSecs = "10";
+            watchdogIntervalSecs = "2";
+            maxWatchdogAgeSecs = "5";
+          }
+          // awsConfig;
+          wants = [ "multi-user.target" ];
         };
-      };
-    watchdawg =
-      { pkgs, ... }:
-      {
-        systemd.services.watchdawg =
-          let
-            inherit (pkgs.stdenv.hostPlatform) system;
-          in
-          {
-            serviceConfig = {
-              Type = "oneshot";
-              Restart = "no";
-              RemainAfterExit = "yes";
-              ExecStart = "${self.packages.${system}.watchdawg}/bin/demo-main";
-            };
-            preStart = "";
-            environment = {
-              orchestratorDomain = "http://orchestrator:9991";
-              jobUrl = "http://datastores:9324/000000000000/jobQueue";
-              watchdogUrl = "http://datastores:9324/000000000000/watchdogQueue";
-              jobVisibilityTimeoutSecs = "10";
-              watchdogIntervalSecs = "2";
-              maxWatchdogAgeSecs = "5";
-            }
-            // awsConfig;
-            wants = [ "multi-user.target" ];
+    };
+    orchestrator = { pkgs, ... }: {
+      networking.firewall.allowedTCPPorts = [ 9991 ];
+      systemd.services.orchestrator =
+        let
+          inherit (pkgs.stdenv.hostPlatform) system;
+        in
+        {
+          serviceConfig = {
+            Type = "oneshot";
+            Restart = "no";
+            RemainAfterExit = "yes";
+            ExecStart = "${self.packages.${system}.orchestrator}/bin/orchestrator";
           };
-      };
-    orchestrator =
-      { pkgs, ... }:
-      {
-        networking.firewall.allowedTCPPorts = [ 9991 ];
-        systemd.services.orchestrator =
-          let
-            inherit (pkgs.stdenv.hostPlatform) system;
-          in
-          {
-            serviceConfig = {
-              Type = "oneshot";
-              Restart = "no";
-              RemainAfterExit = "yes";
-              ExecStart = "${self.packages.${system}.orchestrator}/bin/orchestrator";
-            };
-            preStart = "";
-            environment = { };
-            wants = [ "multi-user.target" ];
+          preStart = "";
+          environment = { };
+          wants = [ "multi-user.target" ];
+        };
+    };
+    tester = { pkgs, ... }: {
+      systemd.services.tester =
+        let
+          inherit (pkgs.stdenv.hostPlatform) system;
+        in
+        {
+          serviceConfig = {
+            Type = "oneshot";
+            Restart = "no";
+            RemainAfterExit = "yes";
+            ExecStart = "${self.packages.${system}.watchdawg}/bin/integration-test";
           };
-      };
-    tester =
-      { pkgs, ... }:
-      {
-        systemd.services.tester =
-          let
-            inherit (pkgs.stdenv.hostPlatform) system;
-          in
-          {
-            serviceConfig = {
-              Type = "oneshot";
-              Restart = "no";
-              RemainAfterExit = "yes";
-              ExecStart = "${self.packages.${system}.watchdawg}/bin/integration-test";
-            };
-            preStart = "";
-            environment = {
-              orchestratorDomain = "http://orchestrator:9991";
-              jobUrl = "http://datastores:9324/000000000000/jobQueue";
-            }
-            // awsConfig;
-            wants = [ "multi-user.target" ];
-          };
-      };
+          preStart = "";
+          environment = {
+            orchestratorDomain = "http://orchestrator:9991";
+            jobUrl = "http://datastores:9324/000000000000/jobQueue";
+          }
+          // awsConfig;
+          wants = [ "multi-user.target" ];
+        };
+    };
   };
   testScript = ''
     start_all()
