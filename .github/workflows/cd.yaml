@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c
         # TODO: get npm from nix develop
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.4.0
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
