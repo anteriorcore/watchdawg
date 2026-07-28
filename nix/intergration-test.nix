@@ -19,7 +19,34 @@ in
 pkgs.testers.runNixOSTest {
   name = "test-watchdawg";
   globalTimeout = 5 * 60;
-  nodes = {
+  # Systemd nspawn for non-darwin machines.  On darwin you can use a customized
+  # linux builder to run the linux integration tests.  A sample config is
+  # shared here, not guaranteed to be strictly the minimal required config:
+  # ```nix
+  # nix.linux-builder = {
+  #   supportedFeatures = [
+  #     "kvm"
+  #     "benchmark"
+  #     "big-parallel"
+  #     "nixos-test"
+  #     "uid-range"
+  #   ];
+  #   config = {
+  #     nix.settings = {
+  #       experimental-features = [
+  #         "nix-command"
+  #         "flakes"
+  #         "auto-allocate-uids"
+  #         "cgroups"
+  #       ];
+  #       extra-system-features = [ "uid-range" ];
+  #       auto-allocate-uids = true;
+  #       use-cgroups = true;
+  #     };
+  #   };
+  # };
+  # ```
+  ${if pkgs.stdenv.isDarwin then "nodes" else "containers"} = {
     datastores = { config, pkgs, ... }: {
       imports = [ elasticmq ];
       systemd.enableStrictShellChecks = true;

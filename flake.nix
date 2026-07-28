@@ -82,10 +82,8 @@
             };
             checks =
               { }
-              # Unfortuntely seems like it only succeeds on x86_64-linux on
-              # GitHub.  Needs linux so darwin doens't work and it should work
-              # on aarch64-darwin but it doesn't seem to finish.
-              // (lib.mkIf (system == "x86_64-linux") { inherit integration-test; });
+              # Needs linux builder so darwin doesn't work on github runners.
+              // (lib.mkIf (system != "aarch64-darwin") { inherit integration-test; });
             legacyPackages = { inherit integration-test; };
           };
       };
