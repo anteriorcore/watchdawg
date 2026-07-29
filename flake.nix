@@ -1,5 +1,5 @@
 # Copyright © 2026 Anterior <tech@anterior.com>
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: GPL-3.0-only
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
