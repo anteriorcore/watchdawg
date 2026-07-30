@@ -1,6 +1,6 @@
 {
   "name": "@anterior/watchdawg",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "workflow agent watchdog to guarantee delivery",
   "type": "module",
   "license": "GPL-3.0-only",
