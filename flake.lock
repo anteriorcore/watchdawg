@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "blockinfile": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1761260260,
+        "narHash": "sha256-pa5FBcIJzIFVZcR4m/v9PZZ+xyQBhHOUVe8A3lmBA8w=",
+        "owner": "dustinsand",
+        "repo": "blockinfile",
+        "rev": "5c3e2e7ee2c6d86ddafc8b004efad9c9915a3574",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dustinsand",
+        "ref": "v0.1.11",
+        "repo": "blockinfile",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -148,6 +165,7 @@
     },
     "tools": {
       "inputs": {
+        "blockinfile": "blockinfile",
         "flake-parts": [
           "flake-parts"
         ],
@@ -160,11 +178,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783634221,
-        "narHash": "sha256-onhSENzdZx4JKd179uNwbg/CYt4difIJ1aT3oj5yrLs=",
+        "lastModified": 1786115443,
+        "narHash": "sha256-E7DoVJrGdtu2YUK4EUq2QGHbObJNPg1btU8rsmUByog=",
         "owner": "anteriorcore",
         "repo": "tools",
-        "rev": "8fb5bb25b9fc2760815984f915964df332445ea8",
+        "rev": "da6768939ee492d799ce574fb70ed0b79afcfbee",
         "type": "github"
       },
       "original": {
