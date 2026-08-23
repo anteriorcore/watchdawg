@@ -17,7 +17,7 @@ jobs:
         working-directory: "ts/watchdawg"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
         # TODO: get npm from nix develop
       - uses: actions/setup-node@v7.0.0
         with:
