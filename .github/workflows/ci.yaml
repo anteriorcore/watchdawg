@@ -33,7 +33,7 @@ jobs:
           key: "nix-eval-cache-${{ runner.os }}-${{ runner.arch }}"
           path: "~/.cache/nix"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
         with:
           enable_kvm: true
           # required for systemd-nspawn nixos tests
@@ -56,7 +56,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
       - run: nix flake show
       - run: nix flake lock --no-update-lock-file
       - run: nix flake check --no-build
