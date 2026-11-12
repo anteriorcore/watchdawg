@@ -66,7 +66,7 @@ type JobMsgRaw = { msg: string; max_age_secs?: number | undefined };
 const jobMsgRawSchema = z.object({
   msg: z.instanceof(Uint8Array).transform((x, ctx) => bytesToStr(x, ctx)),
 
-  max_age_secs: z.union([z.int().positive(), z.undefined()]),
+  max_age_secs: z.int().positive().optional(),
 }) satisfies z.ZodType<JobMsgRaw>;
 
 type JobMsg = JobMsgRaw & {
@@ -75,7 +75,7 @@ type JobMsg = JobMsgRaw & {
 };
 const jobMsgSchema = z.object({
   msg: z.string(),
-  max_age_secs: z.union([z.int().positive(), z.undefined()]),
+  max_age_secs: z.int().positive().optional(),
   msg_handle: z.string(),
   approx_receive_count: z.coerce.number().int(),
 }) satisfies z.ZodType<JobMsg>;
@@ -118,17 +118,15 @@ const watchdogMsgRawPreParsedSchema = z.object({
 type WatchdogMsg = WatchdogMsgRaw & {
   watchdog_msg_handle: string;
   // type lifted from AWS SDK
-  watchdog_msg_attributes:
+  watchdog_msg_attributes?:
     | Partial<Record<MessageSystemAttributeName, string>>
     | undefined;
 };
 const watchdogMsgSchema = z.object({
   watchdog_msg_handle: z.string(),
-
-  watchdog_msg_attributes: z.union([
-    z.partialRecord(z.enum(MessageSystemAttributeName), z.string()),
-    z.undefined(),
-  ]),
+  watchdog_msg_attributes: z
+    .partialRecord(z.enum(MessageSystemAttributeName), z.string())
+    .optional(),
 
   // from raw
   max_age_secs: z.int().positive(),
